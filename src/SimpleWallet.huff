@@ -1,0 +1,64 @@
+// Interface
+#define function deposit() payable returns ()
+// #define function getBalance() view returns (uint256)
+#define function setWithdrawer(address) nonpayable returns ()
+#define function withdraw() nonpayable returns ()
+
+#define event withdrawBalance(address indexed, uint256)
+
+// Slots
+#define constant OWNER_SLOT = 0x00
+#define constant WITHDRAWER_SLOT = 0x01
+#define constant LAST_DEPOSITOR_SLOT = 0x02
+
+// #define constant WITHDRAW BALANCE_SIGNATURE = 0x0cf20cc93113dcf641752fdf31b4b8b29effeceec81e4595ea294194562b38c1
+
+#define macro DEPOSIT() = takes(0) returns (0) {
+    callvalue iszero error jumpi 
+    caller [LAST_DEPOSITOR_SLOT] sstore 
+    stop
+    error:
+        0x00 0x00 revert
+}
+
+#define macro SET_WITHDRAWER() = takes(0) returns (0) {
+    caller callvalue sload eq iszero error jumpi
+    0x04 calldataload [WITHDRAWER_SLOT] sstore
+    stop
+    error:
+        0x00 0x00 revert
+}
+
+#define macro WITHDRAW() = takes(0) returns (0) {
+    [WITHDRAWER_SLOT] sload
+    caller eq iszero error jumpi
+
+    0x00 0x00 0x00 0x00
+    selfbalance caller gas
+    call
+    stop
+    error:
+        0x00 0x00 revert
+}
+
+#define macro CONSTRUCTOR() = takes(0) returns (0) {
+    caller [OWNER_SLOT] sstore
+}
+
+#define macro MAIN() = takes(0) returns (0) {
+	0x00 calldataload 0xE0 shr
+	dup1 0xb6b55f25 eq deposit jumpi
+	// dup1 0x12065fe0 eq getBalance jumpi
+    dup1 0x0d174c24 eq setWithdrawer jumpi
+	dup1 0x3ccfd60b eq withdraw jumpi
+
+	deposit:
+		DEPOSIT()
+	// getBalance:
+	// 	GET_BALANCE()
+    setWithdrawer:
+        SET_WITHDRAWER()
+	withdraw:
+		WITHDRAW()
+	0x00 0x00 revert
+}
